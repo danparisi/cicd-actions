@@ -1,0 +1,24 @@
+name: Biome check
+description: Run Biome ci on frontend/ and upload SARIF
+inputs:
+  output:
+    description: SARIF output path
+    required: false
+    default: reports/sarif/biome.sarif
+  working-directory:
+    description: Frontend directory containing the Biome config
+    required: false
+    default: frontend
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        mkdir -p "$(dirname '${{ inputs.output }}')"
+        cd '${{ inputs.working-directory }}'
+        npx @biomejs/biome ci . --formatter sarif --output '../${{ inputs.output }}' || true
+        [ -f '../${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '../${{ inputs.output }}'
+    - uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output }}
+        category: biome

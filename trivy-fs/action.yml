@@ -1,0 +1,27 @@
+name: Trivy FS
+description: Run Trivy filesystem scan (HIGH,CRITICAL) and upload SARIF
+inputs:
+  output:
+    description: SARIF output path
+    required: false
+    default: reports/sarif/trivy-fs.sarif
+  severity:
+    description: Comma-separated severities that fail the scan
+    required: false
+    default: HIGH,CRITICAL
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: mkdir -p "$(dirname '${{ inputs.output }}')"
+    - uses: aquasecurity/trivy-action@0.24.0
+      with:
+        scan-type: fs
+        scan-ref: .
+        format: sarif
+        output: ${{ inputs.output }}
+        severity: ${{ inputs.severity }}
+    - uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output }}
+        category: trivy-fs

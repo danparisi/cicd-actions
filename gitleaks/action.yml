@@ -1,0 +1,19 @@
+name: Gitleaks secrets
+description: Detect hardcoded secrets with Gitleaks and upload SARIF
+inputs:
+  output:
+    description: SARIF output path
+    required: false
+    default: reports/sarif/gitleaks.sarif
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: mkdir -p "$(dirname '${{ inputs.output }}')"
+    - uses: gitleaks/gitleaks-action@v2
+      with:
+        args: detect --source . --redact --format sarif --report-path ${{ inputs.output }}
+    - uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output }}
+        category: gitleaks

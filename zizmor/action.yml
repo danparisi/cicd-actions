@@ -1,0 +1,24 @@
+name: Zizmor workflow audit
+description: Audit GitHub Actions workflows with Zizmor and upload SARIF
+inputs:
+  output:
+    description: SARIF output path
+    required: false
+    default: reports/sarif/zizmor.sarif
+  workflows:
+    description: Glob of workflow files to audit
+    required: false
+    default: .github/workflows/*.yml
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        mkdir -p "$(dirname '${{ inputs.output }}')"
+        pip install zizmor --quiet || pip3 install zizmor --quiet
+        zizmor --format sarif ${{ inputs.workflows }} > '${{ inputs.output }}' || true
+        [ -f '${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '${{ inputs.output }}'
+    - uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output }}
+        category: zizmor

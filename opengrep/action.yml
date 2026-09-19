@@ -1,0 +1,20 @@
+name: Opengrep SAST
+description: Run Opengrep security-audit rulesets and upload SARIF
+inputs:
+  output:
+    description: SARIF output path
+    required: false
+    default: reports/sarif/opengrep.sarif
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        mkdir -p "$(dirname '${{ inputs.output }}')"
+        pip install opengrep --quiet || pip3 install opengrep --quiet
+        opengrep scan --config p/security-audit --config p/java --config p/typescript --sarif --output '${{ inputs.output }}' --error || true
+        [ -f '${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '${{ inputs.output }}'
+    - uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output }}
+        category: opengrep

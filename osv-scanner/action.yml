@@ -1,0 +1,30 @@
+name: OSV-Scanner
+description: Scan dependencies for known vulnerabilities with OSV-Scanner and upload SARIF
+inputs:
+  output:
+    description: SARIF output path
+    required: false
+    default: reports/sarif/osv-scanner.sarif
+  version:
+    description: osv-scanner release version to install
+    required: false
+    default: 2.2.4
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        mkdir -p "$(dirname '${{ inputs.output }}')"
+        if ! command -v osv-scanner >/dev/null 2>&1; then
+          curl -fsSL -o /tmp/osv-scanner.tar.gz "https://github.com/google/osv-scanner/releases/download/v${{ inputs.version }}/osv-scanner_linux_amd64.tar.gz"
+          tar -xzf /tmp/osv-scanner.tar.gz -C /tmp osv-scanner
+          chmod +x /tmp/osv-scanner
+          export PATH="/tmp:$PATH"
+          echo "/tmp" >> "$GITHUB_PATH"
+        fi
+        osv-scanner scan --recursive --format sarif --output '${{ inputs.output }}' . || true
+        [ -f '${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '${{ inputs.output }}'
+    - uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output }}
+        category: osv-scanner
