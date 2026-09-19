@@ -20,6 +20,10 @@ runs:
       continue-on-error: ${{ inputs.fail-on != 'true' }}
       with:
         args: detect --source . --redact --format sarif --report-path ${{ inputs.output }}
+    - shell: bash
+      if: always()
+      run: |
+        [ -f '${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '${{ inputs.output }}'
     # Pinned: upload-sarif v3 as of 2026-09-18 (3ea06614dafe36dec890db3446326e0d40ce53d4).
     # Keep updated via Dependabot; use the SHA, not the floating tag.
     - uses: github/codeql-action/upload-sarif@3ea06614dafe36dec890db3446326e0d40ce53d4 # v3
