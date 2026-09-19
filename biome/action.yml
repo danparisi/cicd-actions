@@ -1,5 +1,5 @@
 name: Biome check
-description: Run Biome ci on frontend/ and upload SARIF
+description: Run Biome ci on frontend/ and upload SARIF (warn-only by default; set fail-on=true to block)
 inputs:
   output:
     description: SARIF output path
@@ -9,6 +9,14 @@ inputs:
     description: Frontend directory containing the Biome config
     required: false
     default: frontend
+  version:
+    description: '@biomejs/biome npm version to run'
+    required: false
+    default: 2.5.12
+  fail-on:
+    description: Fail the workflow when findings are reported ('true') or only upload SARIF as informational ('false')
+    required: false
+    default: 'false'
 runs:
   using: composite
   steps:
@@ -16,9 +24,17 @@ runs:
       run: |
         mkdir -p "$(dirname '${{ inputs.output }}')"
         cd '${{ inputs.working-directory }}'
-        npx @biomejs/biome ci . --formatter sarif --output '../${{ inputs.output }}' || true
+        scan_exit=0
+        npx --yes '@biomejs/biome@${{ inputs.version }}' ci . --formatter sarif --output '../${{ inputs.output }}' || scan_exit=$?
         [ -f '../${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '../${{ inputs.output }}'
-    - uses: github/codeql-action/upload-sarif@v3
+        if [ '${{ inputs.fail-on }}' = 'true' ] && [ "$scan_exit" -ne 0 ]; then
+          echo 'biome reported findings (fail-on=true)' >&2
+          exit 1
+        fi
+    # Pinned: upload-sarif v3 as of 2026-09-18 (3ea06614dafe36dec890db3446326e0d40ce53d4).
+    # Keep updated via Dependabot; use the SHA, not the floating tag.
+    - uses: github/codeql-action/upload-sarif@3ea06614dafe36dec890db3446326e0d40ce53d4 # v3
+      if: always()
       with:
         sarif_file: ${{ inputs.output }}
         category: biome

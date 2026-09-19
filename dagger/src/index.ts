@@ -1,6 +1,18 @@
 import { dag, Directory, func, object } from "@dagger.io/dagger"
 
 /**
+ * Pinned tool versions (immutable tags; resolve to digests for full
+ * supply-chain pinning, e.g. `docker buildx imagetools inspect <ref>`):
+ * - opengrep v1.27.1 (latest stable as of 2026-09-18)
+ * - gitleaks v8.30.1 (latest stable as of 2026-09-18)
+ * - @biomejs/biome 2.5.12 (latest 2.x as of 2026-09-18)
+ * Keep aquasecurity/trivy-action@0.24.0 as is (already pinned).
+ */
+const OPENGREP_IMAGE = "opengrep/opengrep:v1.27.1"
+const GITLEAKS_IMAGE = "zricethezav/gitleaks:v8.30.1"
+const BIOME_PACKAGE = "@biomejs/biome@2.5.12"
+
+/**
  * App-agnostic CI pipeline.
  *
  * Intended usage from any app repo (local parity with GitHub workflows):
@@ -10,6 +22,12 @@ import { dag, Directory, func, object } from "@dagger.io/dagger"
  * Or from a checkout of this repo:
  *
  *   cd dagger && dagger call ci --source /path/to/app
+ *
+ * NOTE: lint() findings fail the call (blocking), matching the
+ * warn-only vs blocking contract documented in the repo README — except
+ * the SARIF produced inside lint() containers is container-scoped and is
+ * NOT uploaded anywhere on local runs (intended; upload happens only in
+ * the GitHub composite actions via upload-sarif).
  */
 @object()
 export class Cicd {
@@ -39,13 +57,13 @@ export class Cicd {
     return dag
       .container()
       .from("node:24-alpine")
-      .withExec(["corepack", "enable", "pnpm"])
+      .withExec(["corepack", "enable"])
       .withMountedDirectory("/app/frontend", source.directory("frontend"))
       .withWorkdir("/app/frontend")
       .withMountedCache("/root/.local/share/pnpm/store", dag.cacheVolume("pnpm"))
       .withExec(["pnpm", "install", "--frozen-lockfile"])
       .withExec(["pnpm", "run", "generate"])
-      .withExec(["pnpm", "exec", "tsc", "-b", "--noEmit"])
+      .withExec(["pnpm", "exec", "tsc", "--noEmit"])
       .withExec(["pnpm", "run", "build"])
       .withExec(["pnpm", "run", "test:run"])
       .stdout()
@@ -60,7 +78,7 @@ export class Cicd {
     // Opengrep SAST (security-audit ruleset, SARIF out)
     await dag
       .container()
-      .from("opengrep/opengrep:latest")
+      .from(OPENGREP_IMAGE)
       .withMountedDirectory("/src", source)
       .withWorkdir("/src")
       .withExec([
@@ -77,7 +95,7 @@ export class Cicd {
     // Gitleaks secret scan (fails on leaked secrets)
     await dag
       .container()
-      .from("zricethezav/gitleaks:latest")
+      .from(GITLEAKS_IMAGE)
       .withMountedDirectory("/src", source)
       .withWorkdir("/src")
       .withExec(["gitleaks", "detect", "--source", ".", "--no-git", "--redact"])
@@ -89,7 +107,7 @@ export class Cicd {
       .from("node:24-alpine")
       .withMountedDirectory("/app/frontend", source.directory("frontend"))
       .withWorkdir("/app/frontend")
-      .withExec(["npx", "@biomejs/biome", "ci", "."])
+      .withExec(["npx", "--yes", BIOME_PACKAGE, "ci", "."])
       .stdout()
   }
 

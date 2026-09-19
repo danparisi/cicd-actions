@@ -1,5 +1,5 @@
 name: OSV-Scanner
-description: Scan dependencies for known vulnerabilities with OSV-Scanner and upload SARIF
+description: Scan dependencies for known vulnerabilities with OSV-Scanner and upload SARIF (warn-only by default; set fail-on=true to block)
 inputs:
   output:
     description: SARIF output path
@@ -9,6 +9,10 @@ inputs:
     description: osv-scanner release version to install
     required: false
     default: 2.2.4
+  fail-on:
+    description: Fail the workflow when findings are reported ('true') or only upload SARIF as informational ('false')
+    required: false
+    default: 'false'
 runs:
   using: composite
   steps:
@@ -22,9 +26,17 @@ runs:
           export PATH="/tmp:$PATH"
           echo "/tmp" >> "$GITHUB_PATH"
         fi
-        osv-scanner scan --recursive --format sarif --output '${{ inputs.output }}' . || true
+        scan_exit=0
+        osv-scanner scan --recursive --format sarif --output '${{ inputs.output }}' . || scan_exit=$?
         [ -f '${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '${{ inputs.output }}'
-    - uses: github/codeql-action/upload-sarif@v3
+        if [ '${{ inputs.fail-on }}' = 'true' ] && [ "$scan_exit" -ne 0 ]; then
+          echo 'osv-scanner reported findings (fail-on=true)' >&2
+          exit 1
+        fi
+    # Pinned: upload-sarif v3 as of 2026-09-18 (3ea06614dafe36dec890db3446326e0d40ce53d4).
+    # Keep updated via Dependabot; use the SHA, not the floating tag.
+    - uses: github/codeql-action/upload-sarif@3ea06614dafe36dec890db3446326e0d40ce53d4 # v3
+      if: always()
       with:
         sarif_file: ${{ inputs.output }}
         category: osv-scanner

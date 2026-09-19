@@ -1,5 +1,5 @@
 name: Trivy FS
-description: Run Trivy filesystem scan (HIGH,CRITICAL) and upload SARIF
+description: Run Trivy filesystem scan (HIGH,CRITICAL) and upload SARIF (blocking by default; set fail-on=false for informational)
 inputs:
   output:
     description: SARIF output path
@@ -9,19 +9,27 @@ inputs:
     description: Comma-separated severities that fail the scan
     required: false
     default: HIGH,CRITICAL
+  fail-on:
+    description: Fail the workflow when findings are reported ('true') or only upload SARIF as informational ('false')
+    required: false
+    default: 'true'
 runs:
   using: composite
   steps:
     - shell: bash
       run: mkdir -p "$(dirname '${{ inputs.output }}')"
     - uses: aquasecurity/trivy-action@0.24.0
+      continue-on-error: ${{ inputs.fail-on != 'true' }}
       with:
         scan-type: fs
         scan-ref: .
         format: sarif
         output: ${{ inputs.output }}
         severity: ${{ inputs.severity }}
-    - uses: github/codeql-action/upload-sarif@v3
+    # Pinned: upload-sarif v3 as of 2026-09-18 (3ea06614dafe36dec890db3446326e0d40ce53d4).
+    # Keep updated via Dependabot; use the SHA, not the floating tag.
+    - uses: github/codeql-action/upload-sarif@3ea06614dafe36dec890db3446326e0d40ce53d4 # v3
+      if: always()
       with:
         sarif_file: ${{ inputs.output }}
         category: trivy-fs

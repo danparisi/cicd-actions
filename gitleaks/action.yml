@@ -1,19 +1,29 @@
 name: Gitleaks secrets
-description: Detect hardcoded secrets with Gitleaks and upload SARIF
+description: Detect hardcoded secrets with Gitleaks and upload SARIF (blocking by default; set fail-on=false for informational)
 inputs:
   output:
     description: SARIF output path
     required: false
     default: reports/sarif/gitleaks.sarif
+  fail-on:
+    description: Fail the workflow when findings are reported ('true') or only upload SARIF as informational ('false')
+    required: false
+    default: 'true'
 runs:
   using: composite
   steps:
     - shell: bash
       run: mkdir -p "$(dirname '${{ inputs.output }}')"
-    - uses: gitleaks/gitleaks-action@v2
+    # Pinned: gitleaks-action v2 as of 2025-04-17 (ff98106e4c7b2bc287b24eaf42907196329070c7).
+    # Keep updated via Dependabot; use the SHA, not the floating tag.
+    - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+      continue-on-error: ${{ inputs.fail-on != 'true' }}
       with:
         args: detect --source . --redact --format sarif --report-path ${{ inputs.output }}
-    - uses: github/codeql-action/upload-sarif@v3
+    # Pinned: upload-sarif v3 as of 2026-09-18 (3ea06614dafe36dec890db3446326e0d40ce53d4).
+    # Keep updated via Dependabot; use the SHA, not the floating tag.
+    - uses: github/codeql-action/upload-sarif@3ea06614dafe36dec890db3446326e0d40ce53d4 # v3
+      if: always()
       with:
         sarif_file: ${{ inputs.output }}
         category: gitleaks
