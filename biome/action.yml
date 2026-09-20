@@ -35,6 +35,9 @@ runs:
     # Keep updated via Dependabot; use the SHA, not the floating tag.
     - uses: github/codeql-action/upload-sarif@3ea06614dafe36dec890db3446326e0d40ce53d4 # v3
       if: always()
+      # Best-effort: code scanning may be disabled (private repos without GHAS).
+      # SARIF files are still preserved via the caller's upload-artifact step.
+      continue-on-error: true
       with:
         sarif_file: ${{ inputs.output }}
         category: biome
