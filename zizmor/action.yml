@@ -31,7 +31,7 @@ runs:
           echo 'zizmor reported findings (fail-on=true)' >&2
           exit 1
         fi
-    # Pinned: upload-sarif v3 as of 2026-09-18 (3ea06614dafe36dec890db3446326e0d40ce53d4).
+    # Pinned: upload-sarif v4 as of 2026-09-20 (d8073367669608af8fbcc5f63dd0a0d52bb90cff).
     # Keep updated via Dependabot; use the SHA, not the floating tag.
     - uses: github/codeql-action/upload-sarif@d8073367669608af8fbcc5f63dd0a0d52bb90cff # v4
       if: always()
