@@ -6,7 +6,7 @@ inputs:
     required: false
     default: reports/sarif/opengrep.sarif
   version:
-    description: Opengrep pip package version to install
+    description: Opengrep release version to install
     required: false
     default: 1.27.1
   fail-on:
@@ -19,7 +19,12 @@ runs:
     - shell: bash
       run: |
         mkdir -p "$(dirname '${{ inputs.output }}')"
-        pip install 'opengrep==${{ inputs.version }}' --quiet || pip3 install 'opengrep==${{ inputs.version }}' --quiet
+        if ! command -v opengrep >/dev/null 2>&1; then
+          curl -fsSL -o /tmp/opengrep 'https://github.com/opengrep/opengrep/releases/download/v${{ inputs.version }}/opengrep_manylinux_x86'
+          chmod +x /tmp/opengrep
+          export PATH="/tmp:$PATH"
+          echo "/tmp" >> "$GITHUB_PATH"
+        fi
         scan_exit=0
         opengrep scan --config p/security-audit --config p/java --config p/typescript --sarif --output '${{ inputs.output }}' --error || scan_exit=$?
         [ -f '${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '${{ inputs.output }}'

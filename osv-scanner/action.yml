@@ -20,8 +20,7 @@ runs:
       run: |
         mkdir -p "$(dirname '${{ inputs.output }}')"
         if ! command -v osv-scanner >/dev/null 2>&1; then
-          curl -fsSL -o /tmp/osv-scanner.tar.gz "https://github.com/google/osv-scanner/releases/download/v${{ inputs.version }}/osv-scanner_linux_amd64.tar.gz"
-          tar -xzf /tmp/osv-scanner.tar.gz -C /tmp osv-scanner
+          curl -fsSL -o /tmp/osv-scanner "https://github.com/google/osv-scanner/releases/download/v${{ inputs.version }}/osv-scanner_linux_amd64"
           chmod +x /tmp/osv-scanner
           export PATH="/tmp:$PATH"
           echo "/tmp" >> "$GITHUB_PATH"

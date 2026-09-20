@@ -36,14 +36,14 @@ hit warm caches on persistent hosts.
 
 | Dependency | Used by | When | How obtained | Source |
 |---|---|---|---|---|
-| `opengrep` (pip package) | `opengrep` action | every analysis run | `pip install opengrep==<version>` on the runner (`pip3` fallback) | PyPI |
+| `opengrep` binary | `opengrep` action | every analysis run, unless already on `PATH` | `curl` of `opengrep_manylinux_x86` for `v<version>`; a pre-installed host binary wins and skips the download | `opengrep/opengrep` GitHub Releases |
 | Trivy (via upstream action) | `trivy-fs` action | every run | `aquasecurity/trivy-action@0.24.0` provisions it; wrapper only passes scan args | GitHub Releases (via upstream action) |
 | Gitleaks (via upstream action) | `gitleaks` action | every run | `gitleaks/gitleaks-action@<SHA>` (`# v2`) ships the binary | Upstream action repo |
 | `@biomejs/biome` (npm package) | `biome` action | every run | `npx --yes @biomejs/biome@<version>` — fetched and run, no install step | npm registry |
 | `zizmor` (pip package) | `zizmor` action | every run | `pip install zizmor==<version>` (`pip3` fallback) | PyPI |
-| `osv-scanner` binary | `osv-scanner` action | every run, unless already on `PATH` | `curl` of `osv-scanner_linux_amd64.tar.gz` for `v<version>`; a pre-installed host binary wins and skips the download | `google/osv-scanner` GitHub Releases |
+| `osv-scanner` binary | `osv-scanner` action | every run, unless already on `PATH` | `curl` of the bare `osv-scanner_linux_amd64` binary for `v<version>` (no tarball); a pre-installed host binary wins and skips the download | `google/osv-scanner` GitHub Releases |
 | `upload-sarif` (JS action) | all six actions | every run | runner resolves the SHA-pinned `github/codeql-action` ref (`# v3`) | `github/codeql-action` repo |
-| `opengrep/opengrep:<ver>` image | Dagger `lint()` | local `dagger call lint/ci` | `docker pull` by the Dagger engine | Docker Hub |
+| `opengrep_musllinux_x86` binary | Dagger `lint()` | local `dagger call lint/ci` | `wget` of the musl release binary inside the `node` container (no official opengrep image exists) | `opengrep/opengrep` GitHub Releases |
 | `zricethezav/gitleaks:<ver>` image | Dagger `lint()` | local `dagger call lint/ci` | `docker pull` by the Dagger engine | Docker Hub |
 | `maven:3.9-eclipse-temurin-25` image | Dagger `backendTest()` | local `dagger call ci` | `docker pull` by the Dagger engine | Docker Hub |
 | `node:24-alpine` image | Dagger `frontendTest()` + Biome container | local `dagger call ci`/`lint` | `docker pull` by the Dagger engine | Docker Hub |
@@ -154,7 +154,13 @@ and downloadable reports, the consumer adds two standard steps:
 
 Local parity with CI: `backendTest`, `frontendTest`, `lint`, `ci`.
 
-Requires Dagger 0.21+ and a running Docker daemon.
+Requires Dagger 0.21+ and a running Docker daemon. One-time setup in this
+checkout generates the TS-SDK bindings (`dagger/sdk/`, gitignored) — without
+it, `dagger call` fails at module load:
+
+```bash
+cd dagger && dagger develop
+```
 
 ```bash
 # from an app repo, using the published module:
@@ -167,7 +173,8 @@ dagger call ci --source /path/to/app   # prints "ci green"
 ```
 
 Containers: `maven:3.9-eclipse-temurin-25`, `node:24-alpine`,
-`opengrep/opengrep:v1.27.1`, `zricethezav/gitleaks:v8.30.1`.
+`zricethezav/gitleaks:v8.30.1` (Opengrep runs as a musl release binary
+inside the `node` container — no official image exists).
 
 ```mermaid
 flowchart TD
@@ -208,11 +215,11 @@ comment — keep updated via Dependabot):
 | `github/codeql-action/upload-sarif` | `3ea06614dafe36dec890db3446326e0d40ce53d4` (`# v3`) | 2026-09-18 |
 | `gitleaks/gitleaks-action` | `ff98106e4c7b2bc287b24eaf42907196329070c7` (`# v2`) | 2025-04-17 |
 | `aquasecurity/trivy-action` | `@0.24.0` (already pinned, kept as is) | — |
-| `opengrep` (pip, `opengrep` action) | `version` input, default `1.27.1` | 2026-09-18 |
+| `opengrep` (binary, `opengrep` action) | `version` input, default `1.27.1` | 2026-09-18 |
 | `zizmor` (pip, `zizmor` action) | `version` input, default `1.30.1` | 2026-09-18 |
 | `@biomejs/biome` (npx, `biome` action) | `version` input, default `2.5.12` | 2026-09-18 |
 | `osv-scanner` (binary, `osv-scanner` action) | `version` input, default `2.2.4` | pre-existing |
-| Dagger `opengrep` image | `opengrep/opengrep:v1.27.1` | 2026-09-18 |
+| Dagger `opengrep` binary | `opengrep_musllinux_x86` at `OPENGREP_VERSION` (no official image) | 2026-09-18 |
 | Dagger `gitleaks` image | `zricethezav/gitleaks:v8.30.1` | 2026-09-18 |
 | Dagger `biome` package | `@biomejs/biome@2.5.12` | 2026-09-18 |
 
