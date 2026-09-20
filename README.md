@@ -1,6 +1,65 @@
 # cicd-actions
 
-App-agnostic pluggable CI actions + Dagger module for local parity.
+Public, app-agnostic library of pluggable CI actions + a Dagger module for local
+parity (Apache-2.0). Any repository consumes pinned tools with one line per tool —
+no copy-paste, no per-repo tool maintenance. Consumers pin the moving **`@v1`** tag.
+
+## What's inside
+
+```
+cicd-actions/
+├── opengrep/action.yml      # SAST (p/security-audit,java,typescript) → SARIF
+├── trivy-fs/action.yml      # SCA vuln scan (HIGH,CRITICAL) → SARIF, blocking
+├── gitleaks/action.yml      # secrets → SARIF, blocking
+├── biome/action.yml         # JS/TS lint/format → SARIF, warn-only
+├── zizmor/action.yml        # GitHub Actions workflow audit → SARIF, warn-only
+├── osv-scanner/action.yml   # dependency advisory scan (recursive) → SARIF, warn-only
+├── dagger/                  # Dagger TS-SDK module (backendTest/frontendTest/lint/ci)
+├── README.md                # this file: contract, pins, reuse guide
+└── LICENSE                  # Apache-2.0
+```
+
+## Requirements (consumer side)
+
+- Runner: any GitHub-hosted (`ubuntu-latest`) or self-hosted Linux runner with
+  network access (actions download pip packages, npm packages, release binaries
+  and container images on first use; warm caches persist on self-hosted hosts).
+- Consumer workflow permissions: `contents: read` everywhere; `security-events: write`
+  on the job that uploads SARIF (required by `upload-sarif` for code scanning).
+- Local runs: Dagger 0.21+ CLI + a running Docker daemon.
+
+## Reuse from any project
+
+```yaml
+# any repo's workflow — one line per tool, no versions to manage
+- uses: danparisi/cicd-actions/trivy-fs@v1
+- uses: danparisi/cicd-actions/gitleaks@v1
+```
+
+```bash
+# local parity in any checkout (needs Dagger CLI + Docker)
+dagger -m github.com/danparisi/cicd-actions/dagger@v1 call lint --source .  # <15s
+dagger -m github.com/danparisi/cicd-actions/dagger@v1 call ci --source .    # full gate
+```
+
+```mermaid
+flowchart LR
+    subgraph consumer["consumer repo"]
+        w["your build + test jobs"]
+        af2["your analysis job"]
+        dev2["developer checkout"]
+    end
+    subgraph lib["danparisi/cicd-actions@v1"]
+        acts2["6 composite actions"]
+        dmod2["Dagger module"]
+    end
+    subgraph gh2["GitHub"]
+        scan2["code scanning"]
+    end
+    w --> af2 --> acts2 --> scan2
+    dev2 -->|"dagger -m ... call ci --source ."| dmod2
+    dmod2 -. "same tools, local parity" .-> af2
+```
 
 ## Composite actions (use as `danparisi/cicd-actions/<name>@v1`)
 
@@ -13,8 +72,24 @@ App-agnostic pluggable CI actions + Dagger module for local parity.
 | `zizmor` | GitHub Actions workflow audit | `reports/sarif/zizmor.sarif` |
 | `osv-scanner` | Dependency vulnerability scan (recursive) | `reports/sarif/osv-scanner.sarif` |
 
-Every action accepts an `output` input (SARIF path) and uploads to code
-scanning via `github/codeql-action/upload-sarif` (SHA-pinned, see below).
+Every action accepts `version` (tool version), `fail-on` (`'true'`/`'false'`) and
+`output` (SARIF path) inputs, and uploads to code scanning via
+`github/codeql-action/upload-sarif` (SHA-pinned, see below).
+
+### Anatomy of one action (same pattern x6)
+
+```mermaid
+flowchart TD
+    subgraph composite["cicd-actions TOOL@v1"]
+        mk["mkdir reports/sarif"] --> tool["run tool"] --> sarif["reports/sarif/TOOL.sarif<br/>(empty-SARIF fallback if missing)"]
+        tool --> gate{"fail-on input?"}
+        gate -->|true| block["exit 1 on findings"]
+        gate -->|false| warn["warn-only"]
+        sarif --> up["upload-sarif (category)"]
+    end
+    up --> scan3["code scanning"]
+    up --> art2["consumer artifact (optional)"]
+```
 
 ## Warn-only vs blocking (`fail-on`)
 
@@ -28,6 +103,74 @@ Every action accepts a `fail-on` input (`'true'` / `'false'`):
 Blocking behavior is never changed silently: each action's `description`
 states its default, and this table is the contract. SARIF upload always
 runs (`if: always()`), even when the scan step fails.
+
+Recommended consumer pattern: gate deploys on the analysis job result, with an
+explicit override input for red analysis only (never override a red build).
+
+## Reporting recipe (consumer side)
+
+The actions only upload SARIF to code scanning. For a per-run findings table
+and downloadable reports, the consumer adds two standard steps:
+
+```yaml
+# at the end of the analysis job:
+- uses: actions/upload-artifact@v4
+  if: always()
+  with: { name: sarif-fast, path: reports/sarif/*.sarif, if-no-files-found: warn, retention-days: 14 }
+# in a summary job (needs: [analysis], if: always()):
+- uses: actions/download-artifact@v4
+  with: { name: sarif-fast, path: reports/sarif }
+- run: |
+    echo "## Analysis Summary" >> $GITHUB_STEP_SUMMARY
+    for f in reports/sarif/*.sarif; do
+      echo "| $(basename "$f" .sarif) | $(grep -c '"ruleId"' "$f") |" >> $GITHUB_STEP_SUMMARY
+    done
+```
+
+## Dagger module (`dagger/`)
+
+Local parity with CI: `backendTest`, `frontendTest`, `lint`, `ci`.
+
+Requires Dagger 0.21+ and a running Docker daemon.
+
+```bash
+# from an app repo, using the published module:
+dagger -m github.com/danparisi/cicd-actions/dagger@v1 call ci --source .
+
+# from a checkout of this repo:
+cd dagger
+dagger call lint --source /path/to/app
+dagger call ci --source /path/to/app   # prints "ci green"
+```
+
+Containers: `maven:3.9-eclipse-temurin-25`, `node:24-alpine`,
+`opengrep/opengrep:v1.27.1`, `zricethezav/gitleaks:v8.30.1`.
+
+```mermaid
+flowchart TD
+    ci["dagger call ci --source ."] --> bt2["backendTest<br/>maven container: generate-sources + test (m2 cache)"]
+    ci --> ft2["frontendTest<br/>node container: install + generate + tsc + build + test (pnpm cache)"]
+    ci --> lt2["lint (<15s)<br/>opengrep + gitleaks + biome containers"]
+    bt2 --> green2["ci green"]
+    ft2 --> green2
+    lt2 --> green2
+```
+
+Note: `lint()` findings fail the call (blocking), but the SARIF it writes
+is container-scoped (`/tmp/opengrep.sarif` inside the Opengrep container)
+and is NOT uploaded anywhere on local runs — that is intended. SARIF
+upload to code scanning happens only in the GitHub composite actions.
+
+## How to add a tool
+
+1. Create `<tool>/action.yml` (composite: `mkdir` + run + `upload-sarif` with a
+   new `category`, following the anatomy above; expose `version`/`fail-on`/`output`).
+2. Add a row to the catalog table and the pin table in this README.
+3. Commit, then move the `v1` tag so consumers pick it up:
+   ```bash
+   git tag -f v1 && git push origin v1 --force
+   ```
+4. Open a PR in each consumer to wire `- uses: danparisi/cicd-actions/<tool>@v1`.
 
 ## Pinned versions
 
@@ -52,30 +195,6 @@ Container image digests are intentionally pinned by immutable version tag
 rather than digest (digests are arch-specific). To resolve a digest, run
 `docker buildx imagetools inspect <ref>` and record it when promoting a
 new version.
-
-## Dagger module (`dagger/`)
-
-Local parity with CI: `backendTest`, `frontendTest`, `lint`, `ci`.
-
-Requires Dagger 0.21+ and a running Docker daemon.
-
-```bash
-# from an app repo, using the published module:
-dagger -m github.com/danparisi/cicd-actions/dagger@v1 call ci --source .
-
-# from a checkout of this repo:
-cd dagger
-dagger call lint --source /path/to/app
-dagger call ci --source /path/to/app   # prints "ci green"
-```
-
-Containers: `maven:3.9-eclipse-temurin-25`, `node:24-alpine`,
-`opengrep/opengrep:v1.27.1`, `zricethezav/gitleaks:v8.30.1`.
-
-Note: `lint()` findings fail the call (blocking), but the SARIF it writes
-is container-scoped (`/tmp/opengrep.sarif` inside the Opengrep container)
-and is NOT uploaded anywhere on local runs — that is intended. SARIF
-upload to code scanning happens only in the GitHub composite actions.
 
 ## App-agnostic limits
 
