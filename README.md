@@ -28,6 +28,29 @@ cicd-actions/
   on the job that uploads SARIF (required by `upload-sarif` for code scanning).
 - Local runs: Dagger 0.21+ CLI + a running Docker daemon.
 
+## Dependencies — where each binary comes from
+
+Nothing is vendored: every tool binary is fetched at run time (pinned versions),
+except when the host already provides it. First use needs network; repeat runs
+hit warm caches on persistent hosts.
+
+| Dependency | Used by | When | How obtained | Source |
+|---|---|---|---|---|
+| `opengrep` (pip package) | `opengrep` action | every analysis run | `pip install opengrep==<version>` on the runner (`pip3` fallback) | PyPI |
+| Trivy (via upstream action) | `trivy-fs` action | every run | `aquasecurity/trivy-action@0.24.0` provisions it; wrapper only passes scan args | GitHub Releases (via upstream action) |
+| Gitleaks (via upstream action) | `gitleaks` action | every run | `gitleaks/gitleaks-action@<SHA>` (`# v2`) ships the binary | Upstream action repo |
+| `@biomejs/biome` (npm package) | `biome` action | every run | `npx --yes @biomejs/biome@<version>` — fetched and run, no install step | npm registry |
+| `zizmor` (pip package) | `zizmor` action | every run | `pip install zizmor==<version>` (`pip3` fallback) | PyPI |
+| `osv-scanner` binary | `osv-scanner` action | every run, unless already on `PATH` | `curl` of `osv-scanner_linux_amd64.tar.gz` for `v<version>`; a pre-installed host binary wins and skips the download | `google/osv-scanner` GitHub Releases |
+| `upload-sarif` (JS action) | all six actions | every run | runner resolves the SHA-pinned `github/codeql-action` ref (`# v3`) | `github/codeql-action` repo |
+| `opengrep/opengrep:<ver>` image | Dagger `lint()` | local `dagger call lint/ci` | `docker pull` by the Dagger engine | Docker Hub |
+| `zricethezav/gitleaks:<ver>` image | Dagger `lint()` | local `dagger call lint/ci` | `docker pull` by the Dagger engine | Docker Hub |
+| `maven:3.9-eclipse-temurin-25` image | Dagger `backendTest()` | local `dagger call ci` | `docker pull` by the Dagger engine | Docker Hub |
+| `node:24-alpine` image | Dagger `frontendTest()` + Biome container | local `dagger call ci`/`lint` | `docker pull` by the Dagger engine | Docker Hub |
+| Runner prerequisites (`bash`, `git`, `curl`, `tar`, `python3`/`pip`, `node`/`npx`) | all composite actions | every run — must pre-exist | pre-installed on the runner image/host, never fetched by the actions | Runner environment |
+
+`version` inputs (see catalog) override the defaults per run without touching this repo.
+
 ## Reuse from any project
 
 ```yaml
