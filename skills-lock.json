@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "coolify": {
+      "source": "oakoss/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/coolify/SKILL.md",
+      "computedHash": "ff688226d48aa0a801fdb09417a50c9aca0677f7867a8da2429d7dbdf4929431"
+    }
+  }
+}
