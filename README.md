@@ -166,9 +166,11 @@ upload to code scanning happens only in the GitHub composite actions.
 1. Create `<tool>/action.yml` (composite: `mkdir` + run + `upload-sarif` with a
    new `category`, following the anatomy above; expose `version`/`fail-on`/`output`).
 2. Add a row to the catalog table and the pin table in this README.
-3. Commit, then move the `v1` tag so consumers pick it up:
+3. Commit, then move the `v1` tag so consumers pick it up (delete + recreate —
+   no `--force`, to satisfy destructive-push guardrails):
    ```bash
-   git tag -f v1 && git push origin v1 --force
+   git tag -f v1
+   git push origin :refs/tags/v1 && git push origin v1
    ```
 4. Open a PR in each consumer to wire `- uses: danparisi/cicd-actions/<tool>@v1`.
 
