@@ -2,6 +2,13 @@
 
 Library of pluggable GitHub composite actions + Dagger module for local parity. Consumers pin `@v1`. No app code, no test suite, no workflows in this repo.
 
+## Docker access
+
+`docker` CLI/SDKs already target the engine — use them directly, don't probe.
+- Unix socket: `/var/run/docker.sock` (host or privileged container).
+- TCP proxy inside containers: `$DOCKER_HOST` set (e.g. `tcp://<ip>:2375`) → docker-in-docker gateway; `docker info` confirms it works.
+- Rule: `$DOCKER_HOST` set → TCP proxy; else socket.
+
 ## Layout
 
 - `<tool>/action.yml` — one composite action each: `opengrep/`, `trivy-fs/`, `gitleaks/`, `biome/`, `zizmor/`, `osv-scanner/`
