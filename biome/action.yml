@@ -23,10 +23,9 @@ runs:
     - shell: bash
       run: |
         mkdir -p "$(dirname '${{ inputs.output }}')"
-        cd '${{ inputs.working-directory }}'
         scan_exit=0
-        npx --yes '@biomejs/biome@${{ inputs.version }}' ci . --formatter sarif --output '../${{ inputs.output }}' || scan_exit=$?
-        [ -f '../${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '../${{ inputs.output }}'
+        npx --yes '@biomejs/biome@${{ inputs.version }}' ci '${{ inputs.working-directory }}' --reporter=sarif --reporter-file='${{ inputs.output }}' || scan_exit=$?
+        [ -f '${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '${{ inputs.output }}'
         if [ '${{ inputs.fail-on }}' = 'true' ] && [ "$scan_exit" -ne 0 ]; then
           echo 'biome reported findings (fail-on=true)' >&2
           exit 1
