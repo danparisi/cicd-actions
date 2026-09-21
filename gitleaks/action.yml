@@ -25,6 +25,7 @@ runs:
             "https://github.com/zricethezav/gitleaks/releases/download/v${{ inputs.version }}/gitleaks_${{ inputs.version }}_linux_x64.tar.gz"
           tar -xzf /tmp/gitleaks-install/gitleaks.tar.gz -C /tmp/gitleaks-install gitleaks
           chmod +x /tmp/gitleaks-install/gitleaks
+          export PATH="/tmp/gitleaks-install:$PATH"
           echo "/tmp/gitleaks-install" >> "$GITHUB_PATH"
         fi
         scan_exit=0
