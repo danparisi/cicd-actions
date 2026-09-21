@@ -5,6 +5,10 @@ inputs:
     description: SARIF output path
     required: false
     default: reports/sarif/gitleaks.sarif
+  version:
+    description: Gitleaks release version to install
+    required: false
+    default: 8.30.1
   fail-on:
     description: Fail the workflow when findings are reported ('true') or only upload SARIF as informational ('false')
     required: false
@@ -13,17 +17,23 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: mkdir -p "$(dirname '${{ inputs.output }}')"
-    # Pinned: gitleaks-action v2 as of 2025-04-17 (ff98106e4c7b2bc287b24eaf42907196329070c7).
-    # Keep updated via Dependabot; use the SHA, not the floating tag.
-    - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
-      continue-on-error: ${{ inputs.fail-on != 'true' }}
-      with:
-        args: detect --source . --redact --format sarif --report-path ${{ inputs.output }}
-    - shell: bash
-      if: always()
       run: |
+        mkdir -p "$(dirname '${{ inputs.output }}')"
+        if ! command -v gitleaks >/dev/null 2>&1; then
+          mkdir -p /tmp/gitleaks-install
+          curl -fsSL -o /tmp/gitleaks-install/gitleaks.tar.gz \
+            "https://github.com/zricethezav/gitleaks/releases/download/v${{ inputs.version }}/gitleaks_${{ inputs.version }}_linux_x64.tar.gz"
+          tar -xzf /tmp/gitleaks-install/gitleaks.tar.gz -C /tmp/gitleaks-install gitleaks
+          chmod +x /tmp/gitleaks-install/gitleaks
+          echo "/tmp/gitleaks-install" >> "$GITHUB_PATH"
+        fi
+        scan_exit=0
+        gitleaks detect --source . --no-git --redact -f sarif -r '${{ inputs.output }}' || scan_exit=$?
         [ -f '${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '${{ inputs.output }}'
+        if [ '${{ inputs.fail-on }}' = 'true' ] && [ "$scan_exit" -ne 0 ]; then
+          echo 'gitleaks reported findings (fail-on=true)' >&2
+          exit 1
+        fi
     # Pinned: upload-sarif v4 as of 2026-09-20 (d8073367669608af8fbcc5f63dd0a0d52bb90cff).
     # Keep updated via Dependabot; use the SHA, not the floating tag.
     - uses: github/codeql-action/upload-sarif@d8073367669608af8fbcc5f63dd0a0d52bb90cff # v4

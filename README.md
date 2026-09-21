@@ -38,7 +38,7 @@ hit warm caches on persistent hosts.
 |---|---|---|---|---|
 | `opengrep` binary | `opengrep` action | every analysis run, unless already on `PATH` | `curl` of `opengrep_manylinux_x86` for `v<version>`; a pre-installed host binary wins and skips the download | `opengrep/opengrep` GitHub Releases |
 | Trivy (via upstream action) | `trivy-fs` action | every run | `aquasecurity/trivy-action@0.24.0` provisions it; wrapper only passes scan args | GitHub Releases (via upstream action) |
-| Gitleaks (via upstream action) | `gitleaks` action | every run | `gitleaks/gitleaks-action@<SHA>` (`# v2`) ships the binary | Upstream action repo |
+| Gitleaks (binary) | `gitleaks` action | every analysis run, unless already on `PATH` | unpack the bare `gitleaks` binary from the `gitleaks_<ver>_linux_x64.tar.gz` release artifact; a pre-installed host binary wins and skips the download | `zricethezav/gitleaks` GitHub Releases |
 | `@biomejs/biome` (npm package) | `biome` action | every run | `npx --yes @biomejs/biome@<version>` — fetched and run, no install step | npm registry |
 | `zizmor` (pip package) | `zizmor` action | every run | `pip install zizmor==<version>` (`pip3` fallback) | PyPI |
 | `osv-scanner` binary | `osv-scanner` action | every run, unless already on `PATH` | `curl` of the bare `osv-scanner_linux_amd64` binary for `v<version>` (no tarball); a pre-installed host binary wins and skips the download | `google/osv-scanner` GitHub Releases |
@@ -90,7 +90,7 @@ flowchart LR
 |---|---|---|
 | `opengrep` | Opengrep SAST (`p/security-audit`, `p/java`, `p/typescript`) | `reports/sarif/opengrep.sarif` |
 | `trivy-fs` | Trivy filesystem scan (`HIGH,CRITICAL`) | `reports/sarif/trivy-fs.sarif` |
-| `gitleaks` | Secret detection via `gitleaks-action` | `reports/sarif/gitleaks.sarif` |
+| `gitleaks` | Secret detection (bare binary, release-pinned) | `reports/sarif/gitleaks.sarif` |
 | `biome` | `biome ci` on `frontend/` | `reports/sarif/biome.sarif` |
 | `zizmor` | GitHub Actions workflow audit | `reports/sarif/zizmor.sarif` |
 | `osv-scanner` | Dependency vulnerability scan (recursive) | `reports/sarif/osv-scanner.sarif` |
@@ -213,7 +213,7 @@ comment — keep updated via Dependabot):
 | Tool | Pin | As of |
 |---|---|---|
 | `github/codeql-action/upload-sarif` | `3ea06614dafe36dec890db3446326e0d40ce53d4` (`# v3`) | 2026-09-18 |
-| `gitleaks/gitleaks-action` | `ff98106e4c7b2bc287b24eaf42907196329070c7` (`# v2`) | 2025-04-17 |
+| `gitleaks` (binary, `gitleaks` action) | `version` input, default `8.30.1` | 2026-09-21 |
 | `aquasecurity/trivy-action` | `@0.24.0` (already pinned, kept as is) | — |
 | `opengrep` (binary, `opengrep` action) | `version` input, default `1.27.1` | 2026-09-18 |
 | `zizmor` (pip, `zizmor` action) | `version` input, default `1.30.1` | 2026-09-18 |
