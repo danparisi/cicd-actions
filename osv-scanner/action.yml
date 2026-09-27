@@ -20,11 +20,12 @@ runs:
       run: |
         mkdir -p "$(dirname '${{ inputs.output }}')"
         if ! command -v osv-scanner >/dev/null 2>&1; then
-          mkdir -p /tmp/osv-scanner-install
-          curl -fsSL -o /tmp/osv-scanner-install/osv-scanner "https://github.com/google/osv-scanner/releases/download/v${{ inputs.version }}/osv-scanner_linux_amd64"
-          chmod +x /tmp/osv-scanner-install/osv-scanner
-          export PATH="/tmp/osv-scanner-install:$PATH"
-          echo "/tmp/osv-scanner-install" >> "$GITHUB_PATH"
+          install_dir="${RUNNER_TEMP:-/tmp}/osv-scanner-install"
+          mkdir -p "$install_dir"
+          curl -fsSL -o "$install_dir/osv-scanner" "https://github.com/google/osv-scanner/releases/download/v${{ inputs.version }}/osv-scanner_linux_amd64"
+          chmod +x "$install_dir/osv-scanner"
+          export PATH="$install_dir:$PATH"
+          echo "$install_dir" >> "$GITHUB_PATH"
         fi
         scan_exit=0
         osv-scanner scan --recursive --format sarif --output '${{ inputs.output }}' . || scan_exit=$?

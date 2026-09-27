@@ -224,7 +224,7 @@ Exception: `aquasecurity/trivy-action` stays tag-pinned at `@0.24.0`
 | `@biomejs/biome` (npx, `biome` action) | `version` input, default `2.5.12` | 2026-09-18 |
 | `osv-scanner` (binary, `osv-scanner` action) | `version` input, default `2.2.4` | pre-existing |
 | Dagger `opengrep` binary | `opengrep_musllinux_x86` at `OPENGREP_VERSION` (no official image) | 2026-09-18 |
-| Dagger `gitleaks` image | `zricethezav/gitleaks:v8.30.1` | 2026-09-18 |
+| Dagger `gitleaks` image | `zricethezav/gitleaks:v8.30.1` | 2026-09-21 |
 | Dagger `biome` package | `@biomejs/biome@2.5.12` | 2026-09-18 |
 
 Container image digests are intentionally pinned by immutable version tag

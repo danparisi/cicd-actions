@@ -20,13 +20,14 @@ runs:
       run: |
         mkdir -p "$(dirname '${{ inputs.output }}')"
         if ! command -v gitleaks >/dev/null 2>&1; then
-          mkdir -p /tmp/gitleaks-install
-          curl -fsSL -o /tmp/gitleaks-install/gitleaks.tar.gz \
+          install_dir="${RUNNER_TEMP:-/tmp}/gitleaks-install"
+          mkdir -p "$install_dir"
+          curl -fsSL -o "$install_dir/gitleaks.tar.gz" \
             "https://github.com/zricethezav/gitleaks/releases/download/v${{ inputs.version }}/gitleaks_${{ inputs.version }}_linux_x64.tar.gz"
-          tar -xzf /tmp/gitleaks-install/gitleaks.tar.gz -C /tmp/gitleaks-install gitleaks
-          chmod +x /tmp/gitleaks-install/gitleaks
-          export PATH="/tmp/gitleaks-install:$PATH"
-          echo "/tmp/gitleaks-install" >> "$GITHUB_PATH"
+          tar -xzf "$install_dir/gitleaks.tar.gz" -C "$install_dir" gitleaks
+          chmod +x "$install_dir/gitleaks"
+          export PATH="$install_dir:$PATH"
+          echo "$install_dir" >> "$GITHUB_PATH"
         fi
         scan_exit=0
         gitleaks detect --source . --no-git --redact -f sarif -r '${{ inputs.output }}' || scan_exit=$?
