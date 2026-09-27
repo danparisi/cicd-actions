@@ -162,6 +162,8 @@ it, `dagger call` fails at module load:
 cd dagger && dagger develop
 ```
 
+Pre-push (no engine needed): `bash scripts/verify.sh` — checks pins, opengrep parity, action anatomy, and `tsc`.
+
 ```bash
 # from an app repo, using the published module:
 dagger -m github.com/danparisi/cicd-actions/dagger@v1 call ci --source .

@@ -35,6 +35,7 @@ Standard inputs: `version`, `fail-on` (`'true'`/`'false'`), `output` (default `r
 - First `dagger develop` in `dagger/` (generates gitignored `sdk/` bindings; `call` fails at load without it). Typecheck needs no engine/Docker (`node_modules/` not vendored): `npm ci && npx tsc --noEmit`.
 - Local runs: `cd dagger && dagger call lint --source /path/to/app` (<15s) or `dagger call ci --source /path/to/app` (prints `ci green`).
 - Gotchas: `frontendTest` + Biome step mount `source.directory("frontend")` and fail without `frontend/` (pnpm + Vitest assumed); `backendTest` needs `pom.xml` at source root (`mvn -B generate-sources` then `test`); `lint()` is blocking but its SARIF is container-scoped (`/tmp/opengrep.sarif`) and never uploaded — upload happens only in composite actions.
+- Pre-push check (no engine/Docker): `bash scripts/verify.sh` (pins + parity + anatomy + `tsc`).
 
 ## Add a tool / release
 
