@@ -57,6 +57,8 @@ export class Cicd {
   /**
    * Node frontend: install, codegen, typecheck, build, unit tests.
    * Expects the app under `frontend/` (pnpm, Vitest).
+   * Fail-fast: missing `frontend/` throws from source.directory() —
+   * intentional (no silent skip); see README "App-agnostic limits".
    */
   @func()
   async frontendTest(source: Directory): Promise<string> {
@@ -78,6 +80,8 @@ export class Cicd {
   /**
    * Fast static analysis (<15s target for pre-push): Opengrep + Gitleaks,
    * then Biome on `frontend/`. Fails the call on tool findings.
+   * Requires `frontend/` + root `pom.xml` (via backendTest in ci());
+   * missing dirs fail fast — no fallback.
    */
   @func()
   async lint(source: Directory): Promise<string> {

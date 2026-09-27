@@ -235,9 +235,11 @@ new version.
 ## App-agnostic limits
 
 - `frontend/` is a hard requirement: `frontendTest` and the Biome step of
-  `lint()` mount `source.directory("frontend")` and fail if the consuming
-  repo has no `frontend/` directory (pnpm + Vitest assumed).
+  `lint()` mount `source.directory("frontend")` and fail fast if the consuming
+  repo has no `frontend/` directory (pnpm + Vitest assumed). Workaround:
+  call `backendTest` alone, or add an empty `frontend/` with `package.json`.
 - `backendTest` requires a Maven project (`pom.xml`) at the source root.
+  Workaround: call `frontendTest`/`lint` alone via `dagger call`.
 - No engine is needed to validate the module's TypeScript: `npx tsc --noEmit`
   in `dagger/` typechecks without the Dagger engine or Docker.
 
