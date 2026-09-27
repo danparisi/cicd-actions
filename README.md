@@ -208,7 +208,9 @@ upload to code scanning happens only in the GitHub composite actions.
 
 No `latest` or floating major tags for tools. Third-party actions are
 pinned to full commit SHAs (with the version noted in a trailing
-comment — keep updated via Dependabot):
+comment — keep updated via Dependabot, see `.github/dependabot.yml`).
+Exception: `aquasecurity/trivy-action` stays tag-pinned at `@0.24.0`
+(upstream-only pin; Dependabot tracks the tag):
 
 | Tool | Pin | As of |
 |---|---|---|
