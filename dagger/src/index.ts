@@ -80,8 +80,8 @@ export class Cicd {
   /**
    * Fast static analysis (<15s target for pre-push): Opengrep + Gitleaks,
    * then Biome on `frontend/`. Fails the call on tool findings.
-   * Requires `frontend/` + root `pom.xml` (via backendTest in ci());
-   * missing dirs fail fast — no fallback.
+   * Requires `frontend/`; `ci()` additionally requires root `pom.xml`
+   * (via `backendTest`); missing dirs fail fast — no fallback.
    */
   @func()
   async lint(source: Directory): Promise<string> {
