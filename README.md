@@ -42,7 +42,7 @@ hit warm caches on persistent hosts.
 | `@biomejs/biome` (npm package) | `biome` action | every run | `npx --yes @biomejs/biome@<version>` — fetched and run, no install step | npm registry |
 | `zizmor` (pip package) | `zizmor` action | every run | `pip install zizmor==<version>` (`pip3` fallback) | PyPI |
 | `osv-scanner` binary | `osv-scanner` action | every run, unless already on `PATH` | `curl` of the bare `osv-scanner_linux_amd64` binary for `v<version>` (no tarball); a pre-installed host binary wins and skips the download | `google/osv-scanner` GitHub Releases |
-| `upload-sarif` (JS action) | all six actions | every run | runner resolves the SHA-pinned `github/codeql-action` ref (`# v3`) | `github/codeql-action` repo |
+| `upload-sarif` (JS action) | all six actions | every run | runner resolves the SHA-pinned `github/codeql-action` ref (`# v4`) | `github/codeql-action` repo |
 | `opengrep_musllinux_x86` binary | Dagger `lint()` | local `dagger call lint/ci` | `wget` of the musl release binary inside the `node` container (no official opengrep image exists) | `opengrep/opengrep` GitHub Releases |
 | `zricethezav/gitleaks:<ver>` image | Dagger `lint()` | local `dagger call lint/ci` | `docker pull` by the Dagger engine | Docker Hub |
 | `maven:3.9-eclipse-temurin-25` image | Dagger `backendTest()` | local `dagger call ci` | `docker pull` by the Dagger engine | Docker Hub |
@@ -212,7 +212,7 @@ comment — keep updated via Dependabot):
 
 | Tool | Pin | As of |
 |---|---|---|
-| `github/codeql-action/upload-sarif` | `3ea06614dafe36dec890db3446326e0d40ce53d4` (`# v3`) | 2026-09-18 |
+| `github/codeql-action/upload-sarif` | `d8073367669608af8fbcc5f63dd0a0d52bb90cff` (`# v4`) | 2026-09-20 |
 | `gitleaks` (binary, `gitleaks` action) | `version` input, default `8.30.1` | 2026-09-21 |
 | `aquasecurity/trivy-action` | `@0.24.0` (already pinned, kept as is) | — |
 | `opengrep` (binary, `opengrep` action) | `version` input, default `1.27.1` | 2026-09-18 |
