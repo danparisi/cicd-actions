@@ -92,9 +92,14 @@ export class Cicd {
         "scan",
         "--config",
         "p/security-audit",
+        "--config",
+        "p/java",
+        "--config",
+        "p/typescript",
         "--sarif",
         "--output",
         "/tmp/opengrep.sarif",
+        "--error",
       ])
       .sync()
 
