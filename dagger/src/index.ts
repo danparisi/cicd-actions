@@ -5,8 +5,11 @@ import { dag, Directory, func, object } from "@dagger.io/dagger"
  * supply-chain pinning, e.g. `docker buildx imagetools inspect <ref>`):
  * - opengrep v1.27.1 (latest stable as of 2026-09-18; musl binary from
  *   GitHub Releases — no official opengrep container image exists)
- * - gitleaks v8.30.1 (latest stable as of 2026-09-18)
+ * - gitleaks v8.30.1 (latest stable as of 2026-09-21)
  * - @biomejs/biome 2.5.12 (latest 2.x as of 2026-09-18)
+ * NOTE: Dagger lint() is blocking and container-scoped (/tmp/*.sarif,
+ * never uploaded); biome step runs `ci .` without SARIF — upload happens
+ * only in composite actions. Opengrep configs mirror opengrep/action.yml.
  * Keep aquasecurity/trivy-action@0.24.0 as is (already pinned).
  */
 const OPENGREP_VERSION = "1.27.1"
