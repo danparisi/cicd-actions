@@ -23,7 +23,9 @@ runs:
     - shell: bash
       run: |
         mkdir -p "$(dirname '${{ inputs.output }}')"
-        pip install 'zizmor==${{ inputs.version }}' --quiet || pip3 install 'zizmor==${{ inputs.version }}' --quiet
+        if ! command -v zizmor >/dev/null 2>&1; then
+          pip install 'zizmor==${{ inputs.version }}' --quiet || pip3 install 'zizmor==${{ inputs.version }}' --quiet
+        fi
         scan_exit=0
         zizmor --format sarif ${{ inputs.workflows }} > '${{ inputs.output }}' || scan_exit=$?
         [ -f '${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '${{ inputs.output }}'

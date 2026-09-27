@@ -20,10 +20,11 @@ runs:
       run: |
         mkdir -p "$(dirname '${{ inputs.output }}')"
         if ! command -v opengrep >/dev/null 2>&1; then
-          curl -fsSL -o /tmp/opengrep 'https://github.com/opengrep/opengrep/releases/download/v${{ inputs.version }}/opengrep_manylinux_x86'
-          chmod +x /tmp/opengrep
-          export PATH="/tmp:$PATH"
-          echo "/tmp" >> "$GITHUB_PATH"
+          mkdir -p /tmp/opengrep-install
+          curl -fsSL -o /tmp/opengrep-install/opengrep 'https://github.com/opengrep/opengrep/releases/download/v${{ inputs.version }}/opengrep_manylinux_x86'
+          chmod +x /tmp/opengrep-install/opengrep
+          export PATH="/tmp/opengrep-install:$PATH"
+          echo "/tmp/opengrep-install" >> "$GITHUB_PATH"
         fi
         scan_exit=0
         opengrep scan --config p/security-audit --config p/java --config p/typescript --sarif --output '${{ inputs.output }}' --error || scan_exit=$?
