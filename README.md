@@ -46,7 +46,7 @@ hit warm caches on persistent hosts.
 | `opengrep_musllinux_x86` binary | Dagger `lint()` | local `dagger call lint/ci` | `wget` of the musl release binary inside the `node` container (no official opengrep image exists) | `opengrep/opengrep` GitHub Releases |
 | `zricethezav/gitleaks:<ver>` image | Dagger `lint()` | local `dagger call lint/ci` | `docker pull` by the Dagger engine | Docker Hub |
 | `maven:3.9-eclipse-temurin-25` image | Dagger `backendTest()` | local `dagger call ci` | `docker pull` by the Dagger engine | Docker Hub |
-| `node:24-alpine` image | Dagger `frontendTest()` + Biome container | local `dagger call ci`/`lint` | `docker pull` by the Dagger engine | Docker Hub |
+| `node:24-alpine` image | Dagger `frontendTest()` + eslint lint container | local `dagger call ci`/`lint` | `docker pull` by the Dagger engine | Docker Hub |
 | Runner prerequisites (`bash`, `git`, `curl`, `tar`, `python3`/`pip`, `node`/`npx`) | all composite actions | every run — must pre-exist | pre-installed on the runner image/host, never fetched by the actions | Runner environment |
 
 `version` inputs (see catalog) override the defaults per run without touching this repo.
@@ -182,7 +182,7 @@ inside the `node` container — no official image exists).
 flowchart TD
     ci["dagger call ci --source ."] --> bt2["backendTest<br/>maven container: generate-sources + test (m2 cache)"]
     ci --> ft2["frontendTest<br/>node container: install + generate + tsc + build + test (pnpm cache)"]
-    ci --> lt2["lint (<15s)<br/>opengrep + gitleaks + biome containers"]
+    ci --> lt2["lint (<60s)<br/>opengrep + gitleaks + repo eslint containers"]
     bt2 --> green2["ci green"]
     ft2 --> green2
     lt2 --> green2
@@ -225,7 +225,7 @@ Exception: `aquasecurity/trivy-action` stays tag-pinned at `@0.24.0`
 | `osv-scanner` (binary, `osv-scanner` action) | `version` input, default `2.2.4` | pre-existing |
 | Dagger `opengrep` binary | `opengrep_musllinux_x86` at `OPENGREP_VERSION` (no official image) | 2026-09-18 |
 | Dagger `gitleaks` image | `zricethezav/gitleaks:v8.30.1` | 2026-09-21 |
-| Dagger `biome` package | `@biomejs/biome@2.5.12` | 2026-09-18 |
+| Dagger JS lint | consumer repo's own `pnpm run lint` (eslint; no version pinned — repo-owned) | 2026-09-30 |
 
 Container image digests are intentionally pinned by immutable version tag
 rather than digest (digests are arch-specific). To resolve a digest, run
@@ -234,9 +234,9 @@ new version.
 
 ## App-agnostic limits
 
-- `frontend/` is a hard requirement: `frontendTest` and the Biome step of
+- `frontend/` is a hard requirement: `frontendTest` and the eslint step of
   `lint()` mount `source.directory("frontend")` and fail fast if the consuming
-  repo has no `frontend/` directory (pnpm + Vitest assumed). Workaround:
+  repo has no `frontend/` directory (pnpm + a `lint` script assumed). Workaround:
   call `backendTest` alone, or add an empty `frontend/` with `package.json`.
 - `backendTest` requires a Maven project (`pom.xml`) at the source root.
   Workaround: call `frontendTest`/`lint` alone via `dagger call`.

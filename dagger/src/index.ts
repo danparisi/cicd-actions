@@ -6,17 +6,18 @@ import { dag, Directory, func, object } from "@dagger.io/dagger"
  * - opengrep v1.27.1 (latest stable as of 2026-09-18; musl binary from
  *   GitHub Releases — no official opengrep container image exists)
  * - gitleaks v8.30.1 (latest stable as of 2026-09-21)
- * - @biomejs/biome 2.5.12 (latest 2.x as of 2026-09-18)
  * NOTE: Dagger lint() is blocking and container-scoped (/tmp/*.sarif,
- * never uploaded); biome step runs `ci .` without SARIF — upload happens
- * only in composite actions. Opengrep configs mirror opengrep/action.yml.
+ * never uploaded); the JS lint step runs the consumer repo's own
+ * `pnpm run lint` (eslint, blocking) instead of zero-config Biome —
+ * Biome has no repo config in consumers and its defaults contradict
+ * eslint-governed codebases (see biome/action.yml, warn-only there).
+ * Opengrep configs mirror opengrep/action.yml.
  * Keep aquasecurity/trivy-action@0.24.0 as is (already pinned).
  */
 const OPENGREP_VERSION = "1.27.1"
 const OPENGREP_MUSL_URL = `https://github.com/opengrep/opengrep/releases/download/v${OPENGREP_VERSION}/opengrep_musllinux_x86`
 const GITLEAKS_IMAGE = "zricethezav/gitleaks:v8.30.1"
 const NODE_IMAGE = "node:24-alpine"
-const BIOME_PACKAGE = "@biomejs/biome@2.5.12"
 
 /**
  * App-agnostic CI pipeline.
@@ -78,10 +79,11 @@ export class Cicd {
   }
 
   /**
-   * Fast static analysis (<15s target for pre-push): Opengrep + Gitleaks,
-   * then Biome on `frontend/`. Fails the call on tool findings.
-   * Requires `frontend/`; `ci()` additionally requires root `pom.xml`
-   * (via `backendTest`); missing dirs fail fast — no fallback.
+   * Fast static analysis (<60s target for pre-push): Opengrep + Gitleaks
+   * (blocking), then the repo's own `pnpm run lint` on `frontend/`
+   * (blocking, stack-native eslint). Requires `frontend/` with pnpm and
+   * a `lint` script; `ci()` additionally requires root `pom.xml`
+   * (via `backendTest`); missing dirs/scripts fail fast — no fallback.
    */
   @func()
   async lint(source: Directory): Promise<string> {
@@ -119,13 +121,20 @@ export class Cicd {
       .withExec(["gitleaks", "detect", "--source", ".", "--no-git", "--redact"])
       .sync()
 
-    // Biome lint/format check on the frontend
+    // Repo-owned JS lint (blocking): the consumer's own eslint config
+    // via `pnpm run lint`. Replaces zero-config `biome ci`, whose defaults
+    // contradict eslint-governed codebases and lint build output.
+    // CI=true: pnpm must not prompt about purging a mounted node_modules.
     return dag
       .container()
       .from(NODE_IMAGE)
+      .withEnvVariable("CI", "true")
+      .withExec(["corepack", "enable"])
       .withMountedDirectory("/app/frontend", source.directory("frontend"))
       .withWorkdir("/app/frontend")
-      .withExec(["npx", "--yes", BIOME_PACKAGE, "ci", "."])
+      .withMountedCache("/root/.local/share/pnpm/store", dag.cacheVolume("pnpm"))
+      .withExec(["pnpm", "install", "--frozen-lockfile"])
+      .withExec(["pnpm", "run", "lint"])
       .stdout()
   }
 

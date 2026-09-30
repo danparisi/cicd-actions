@@ -13,8 +13,10 @@ opengrep_ver=$(grep -o 'OPENGREP_VERSION = "[^"]*"' dagger/src/index.ts | cut -d
 [ "$opengrep_ver" = "$(action_default opengrep/action.yml)" ] || { echo "FAIL: opengrep dagger=$opengrep_ver action=$(action_default opengrep/action.yml)"; exit 1; }
 gitleaks_ver=$(grep -o 'GITLEAKS_IMAGE = "[^"]*"' dagger/src/index.ts | cut -d'"' -f2 | cut -d: -f2 | sed 's/^v//')
 [ "$gitleaks_ver" = "$(action_default gitleaks/action.yml)" ] || { echo "FAIL: gitleaks dagger=$gitleaks_ver action=$(action_default gitleaks/action.yml)"; exit 1; }
-biome_ver=$(grep -o 'BIOME_PACKAGE = "[^"]*"' dagger/src/index.ts | cut -d'"' -f2 | rev | cut -d@ -f1 | rev)
-[ "$biome_ver" = "$(action_default biome/action.yml)" ] || { echo "FAIL: biome dagger=$biome_ver action=$(action_default biome/action.yml)"; exit 1; }
+# Dagger lint() runs repo-owned eslint, not biome (biome/action.yml stays
+# warn-only composite; dagger pins no biome version by design).
+grep -q 'BIOME_PACKAGE' dagger/src/index.ts && { echo "FAIL: dagger must not pin biome"; exit 1; }
+grep -q '"pnpm", "run", "lint"' dagger/src/index.ts || { echo "FAIL: dagger lint() missing repo-owned eslint step"; exit 1; }
 
 echo "== parity: opengrep configs =="
 for c in "p/security-audit" "p/java" "p/typescript"; do
