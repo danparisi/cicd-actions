@@ -6,7 +6,7 @@
   "description": "App-agnostic CI Dagger module: backend-test, frontend-test, lint, ci",
   "dependencies": {"typescript":"5.9.3"},
   "devDependencies": {
-    "@types/node": "^22.7.5",
+    "@types/node": "^26.6.3",
     "typescript": "~5.9.3"
   }
 }
