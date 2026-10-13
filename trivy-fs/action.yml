@@ -30,6 +30,15 @@ runs:
       if: always()
       run: |
         [ -f '${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '${{ inputs.output }}'
+    # Disk hygiene (lenovo-m80q / at 83%): the trivy DB (~1.3G) downloads
+    # into the job's _temp dir on every run (fresh dirs, nothing shared).
+    # Delete it right after the scan; backstop is the 24h /_work prune.
+    # Scoped rm only — never broad deletes under RUNNER_TEMP.
+    - shell: bash
+      if: always()
+      run: |
+        rm -rf "${RUNNER_TEMP}/_github_home/.cache/trivy" "${GITHUB_WORKSPACE}/../_temp/_github_home/.cache/trivy" 2>/dev/null || true
+        find "${RUNNER_TEMP}" -maxdepth 6 -name 'trivy.db' -delete 2>/dev/null || true
     # Pinned: upload-sarif v4 as of 2026-09-20 (d8073367669608af8fbcc5f63dd0a0d52bb90cff).
     # Keep updated via Dependabot; use the SHA, not the floating tag.
     - uses: github/codeql-action/upload-sarif@d8073367669608af8fbcc5f63dd0a0d52bb90cff # v4
