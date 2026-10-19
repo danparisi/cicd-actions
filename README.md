@@ -130,6 +130,32 @@ runs (`if: always()`), even when the scan step fails.
 Recommended consumer pattern: gate deploys on the analysis job result, with an
 explicit override input for red analysis only (never override a red build).
 
+## Opengrep default excludes (generated/vendored dirs)
+
+`opengrep` skips a built-in list of generated/vendored directories, in both the
+composite action and the Dagger `lint()` step:
+
+```
+node_modules dist build out target coverage vendor .venv venv __pycache__
+.next .nuxt .svelte-kit .turbo .cache .pytest_cache .mypy_cache .ruff_cache
+.parcel-cache bower_components .dart_tool htmlcov logs test-results
+playwright-report allure-results allure-report .worktrees .idea .vscode
+```
+
+Why: the Dagger `lint()` mount has no `.git` (Dagger strips it), so Opengrep
+falls back to a filesystem walk where `.gitignore` does not apply and its
+built-in ignores do not skip `node_modules`. Without excludes the blocking
+pre-push gate drowns in third-party findings and — worse — in **other git
+worktrees** checked out under `.worktrees/` (stale copies of the repo whose
+findings you cannot fix from your branch): measured 1134 files / 7 findings in
+one stale worktree during pre-push. One identical list keeps local and CI
+findings the same; `scripts/verify.sh` asserts parity between
+`opengrep/action.yml` and `dagger/src/index.ts`.
+
+Repo-specific gitignored trees that are not in the list (Dagger worktrees,
+screenshot dirs, ...) stay in the consumer's own `.semgrepignore`, which
+Opengrep honours (cwd = repo root).
+
 ## Reporting recipe (consumer side)
 
 The actions only upload SARIF to code scanning. For a per-run findings table

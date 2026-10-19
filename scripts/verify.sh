@@ -24,6 +24,14 @@ for c in "p/security-audit" "p/java" "p/typescript"; do
   grep -q "$c" dagger/src/index.ts || { echo "FAIL: dagger missing $c"; exit 1; }
 done
 
+echo "== parity: opengrep excludes =="
+ts_excludes=$(sed -n '/^const OPENGREP_EXCLUDES =$/,+1p' dagger/src/index.ts | grep -o '"[^"]*"' | tr -d '"')
+act_excludes=$(grep -o 'excludes="[^"]*"' opengrep/action.yml | cut -d'"' -f2)
+[ -n "$ts_excludes" ] || { echo "FAIL: dagger OPENGREP_EXCLUDES not found"; exit 1; }
+[ "$ts_excludes" = "$act_excludes" ] || { echo "FAIL: opengrep exclude lists drifted (dagger vs action)"; exit 1; }
+grep -q '"--exclude"' dagger/src/index.ts || { echo "FAIL: dagger lint() does not pass --exclude"; exit 1; }
+grep -q 'exclude_args' opengrep/action.yml || { echo "FAIL: opengrep action does not pass --exclude"; exit 1; }
+
 echo "== anatomy: all 6 actions =="
 for t in opengrep trivy-fs gitleaks biome zizmor osv-scanner; do
   grep -q 'mkdir -p "$(dirname' "$t/action.yml" || { echo "FAIL: $t missing mkdir reports/sarif"; exit 1; }

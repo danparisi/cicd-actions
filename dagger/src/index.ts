@@ -20,6 +20,21 @@ const GITLEAKS_IMAGE = "zricethezav/gitleaks:v8.30.1"
 const NODE_IMAGE = "node:24-alpine"
 
 /**
+ * Generated/vendored directories Opengrep must skip.
+ *
+ * The Dagger `lint()` mount has no `.git` (Dagger strips it), so Opengrep
+ * falls back to a filesystem walk where `.gitignore` does not apply and its
+ * built-in ignores do not skip `node_modules`. A dirty local working tree
+ * (node_modules, dist, build output, worktrees) would then drown the blocking
+ * pre-push gate in third-party findings that a clean CI checkout never has.
+ *
+ * Single source of truth: byte-identical to the `excludes` variable in
+ * opengrep/action.yml; scripts/verify.sh asserts parity.
+ */
+const OPENGREP_EXCLUDES =
+  "node_modules dist build out target coverage vendor .venv venv __pycache__ .next .nuxt .svelte-kit .turbo .cache .pytest_cache .mypy_cache .ruff_cache .parcel-cache bower_components .dart_tool htmlcov logs test-results playwright-report allure-results allure-report .worktrees .idea .vscode"
+
+/**
  * App-agnostic CI pipeline.
  *
  * Intended usage from any app repo (local parity with GitHub workflows):
@@ -105,6 +120,7 @@ export class Cicd {
         "p/java",
         "--config",
         "p/typescript",
+        ...OPENGREP_EXCLUDES.split(" ").flatMap((dir) => ["--exclude", dir]),
         "--sarif",
         "--output",
         "/tmp/opengrep.sarif",

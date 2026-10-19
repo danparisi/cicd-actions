@@ -27,8 +27,15 @@ runs:
           export PATH="$install_dir:$PATH"
           echo "$install_dir" >> "$GITHUB_PATH"
         fi
+        # Generated/vendored dirs to skip. Byte-identical to OPENGREP_EXCLUDES
+        # in dagger/src/index.ts (scripts/verify.sh asserts parity): the Dagger
+        # mount has no .git, so .gitignore does not apply there, and keeping one
+        # list means same findings local and in CI.
+        excludes="node_modules dist build out target coverage vendor .venv venv __pycache__ .next .nuxt .svelte-kit .turbo .cache .pytest_cache .mypy_cache .ruff_cache .parcel-cache bower_components .dart_tool htmlcov logs test-results playwright-report allure-results allure-report .worktrees .idea .vscode"
+        exclude_args=()
+        for dir in $excludes; do exclude_args+=("--exclude" "$dir"); done
         scan_exit=0
-        opengrep scan --config p/security-audit --config p/java --config p/typescript --sarif --output '${{ inputs.output }}' --error || scan_exit=$?
+        opengrep scan --config p/security-audit --config p/java --config p/typescript "${exclude_args[@]}" --sarif --output '${{ inputs.output }}' --error || scan_exit=$?
         [ -f '${{ inputs.output }}' ] || echo '{"version":"2.1.0","runs":[]}' > '${{ inputs.output }}'
         if [ '${{ inputs.fail-on }}' = 'true' ] && [ "$scan_exit" -ne 0 ]; then
           echo 'opengrep reported findings (fail-on=true)' >&2
