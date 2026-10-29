@@ -2,6 +2,26 @@
 
 Library of pluggable GitHub composite actions + Dagger module for local parity. Consumers pin `@v1`. No app code, no test suite, no workflows in this repo.
 
+## Board (issue tracker — `support-board-*` skills, never `gh`)
+
+Cross-repo hygiene and pipeline work is tracked on the support board (dev stage
+`https://lenovo-m80q.tailc0ff69.ts.net/nautica-pim-support/dev`), board
+**`GitHub Repos`** (slug `github-repos`, keys `GR-N`) — this repo has no dedicated
+board and no GitHub Issues flow.
+
+- **Session env:** `BOARD_TITLE="GitHub Repos"`, `BOARD_AGENT=opencode-agent`.
+  Transport from `~/.config/support-cli/config.json` (vault backup `support.BOARD_TOKEN`)
+  or `BOARD_BASE_URL`/`BOARD_TOKEN`; prove it with `support-cli health` +
+  `support-cli boards find "GitHub Repos"`.
+- **Skills** (global links): `~/.agents/skills/support-board-create-backlog-issue`,
+  `-handle-backlog-issue`, `-create-ready-issue`, `-implement-issue`, `-review-issue`,
+  backed by `nautica_pim-support/skills/`. Claim before writing (`board_claim_card`),
+  `board_require_owned` before In review/Done; only an `LLM` user is assignable.
+- **Work here:** branch `main`, worktree `.worktrees/feat/GR-<n>-<slug>`, merge at
+  `In review→Done` only. Verification is this repo's: `cd dagger && npm ci && npx
+  tsc --noEmit` for typecheck, `dagger call lint --source <app>` when the engine is
+  available, and the consuming repo's gates for anything shipped to `v1`.
+
 ## Docker access
 
 `docker` CLI/SDKs already target the engine — use them directly, don't probe.
