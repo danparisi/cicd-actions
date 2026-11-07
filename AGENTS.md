@@ -15,7 +15,9 @@ board and no GitHub Issues flow.
   `support-cli boards find "GitHub Repos"`.
 - **Skills** (global links): `~/.agents/skills/support-board-create-backlog-issue`,
   `-handle-backlog-issue`, `-create-ready-issue`, `-implement-issue`, `-review-issue`,
-  backed by `nautica_pim-support/skills/`. Claim before writing (`board_claim_card`),
+  `-dispatch`, backed by `nautica_pim-support/skills/`. All move entrypoints are
+  flow-guarded (`openspec/sdlc.yaml` governs every move; missing = default six
+  columns); this repo may add its own `openspec/sdlc.yaml`. Claim before writing (`board_claim_card`),
   `board_require_owned` before In review/Done; only an `LLM` user is assignable.
 - **Work here:** branch `main`, worktree `.worktrees/feat/GR-<n>-<slug>`, merge at
   `In review→Done` only. Verification is this repo's: `cd dagger && npm ci && npx
