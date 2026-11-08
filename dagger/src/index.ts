@@ -3,8 +3,8 @@ import { dag, Directory, func, object } from "@dagger.io/dagger"
 /**
  * Pinned tool versions (immutable tags; resolve to digests for full
  * supply-chain pinning, e.g. `docker buildx imagetools inspect <ref>`):
- * - opengrep v1.27.1 (latest stable as of 2026-09-18; musl binary from
- *   GitHub Releases — no official opengrep container image exists)
+ * - opengrep v1.30.0 (matches homeserver-runner baked binary;
+ *   musl binary from GitHub Releases — no official opengrep image exists)
  * - gitleaks v8.30.1 (latest stable as of 2026-09-21)
  * NOTE: Dagger lint() is blocking and container-scoped (/tmp/*.sarif,
  * never uploaded); the JS lint step runs the consumer repo's own
@@ -14,7 +14,7 @@ import { dag, Directory, func, object } from "@dagger.io/dagger"
  * Opengrep configs mirror opengrep/action.yml.
  * Keep aquasecurity/trivy-action@0.24.0 as is (already pinned).
  */
-const OPENGREP_VERSION = "1.27.1"
+const OPENGREP_VERSION = "1.30.0"
 const OPENGREP_MUSL_URL = `https://github.com/opengrep/opengrep/releases/download/v${OPENGREP_VERSION}/opengrep_musllinux_x86`
 const GITLEAKS_IMAGE = "zricethezav/gitleaks:v8.30.1"
 const NODE_IMAGE = "node:24-alpine"

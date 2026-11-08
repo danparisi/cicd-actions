@@ -245,7 +245,7 @@ Exception: `aquasecurity/trivy-action` stays tag-pinned at `@0.24.0`
 | `github/codeql-action/upload-sarif` | `d8073367669608af8fbcc5f63dd0a0d52bb90cff` (`# v4`) | 2026-09-20 |
 | `gitleaks` (binary, `gitleaks` action) | `version` input, default `8.30.1` | 2026-09-21 |
 | `aquasecurity/trivy-action` | `@0.24.0` (already pinned, kept as is) | — |
-| `opengrep` (binary, `opengrep` action) | `version` input, default `1.27.1` | 2026-09-18 |
+| `opengrep` (binary, `opengrep` action) | `version` input, default `1.30.0` | 2026-11-08 |
 | `zizmor` (pip, `zizmor` action) | `version` input, default `1.30.1` | 2026-09-18 |
 | `@biomejs/biome` (npx, `biome` action) | `version` input, default `2.5.12` | 2026-09-18 |
 | `osv-scanner` (binary, `osv-scanner` action) | `version` input, default `2.2.4` | pre-existing |
