@@ -22,7 +22,7 @@ runs:
         if ! command -v opengrep >/dev/null 2>&1; then
           install_dir="${RUNNER_TEMP:-/tmp}/opengrep-install"
           mkdir -p "$install_dir"
-          curl -fsSL -o "$install_dir/opengrep" 'https://github.com/opengrep/opengrep/releases/download/v${{ inputs.version }}/opengrep_manylinux_x86'
+          curl -fsSL --retry 3 --retry-all-errors --retry-delay 5 -o "$install_dir/opengrep" 'https://github.com/opengrep/opengrep/releases/download/v${{ inputs.version }}/opengrep_manylinux_x86'
           chmod +x "$install_dir/opengrep"
           export PATH="$install_dir:$PATH"
           echo "$install_dir" >> "$GITHUB_PATH"
